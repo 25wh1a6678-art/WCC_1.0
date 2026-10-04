@@ -177,6 +177,18 @@ Extract all incomplete or pending academic tasks as structured JSON with the sch
     };
   } catch (err: unknown) {
     const message = err instanceof Error ? err.message : 'AI planning is temporarily unavailable.';
+    console.warn(`[AI] Gemini request error: ${message}. Using fallback planner.`);
+    
+    // Provide automatic fallback so the student workflow is never halted
+    const fallbackTasks = generateDemoPlan(trimmed, nowIso);
+    if (fallbackTasks.length > 0) {
+      return {
+        tasks: fallbackTasks,
+        source: 'demo_fallback',
+        error: null,
+      };
+    }
+
     return {
       tasks: [],
       source: 'gemini',

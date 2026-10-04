@@ -27,7 +27,7 @@ export async function callGeminiGenerate(
   config?: GeminiClientConfig
 ): Promise<string> {
   const client = getGeminiClient();
-  const modelName = config?.model || process.env.GEMINI_MODEL || 'gemini-2.5-flash';
+  const modelName = config?.model || process.env.GEMINI_MODEL || 'gemini-3.8-flash';
 
   console.log(`[AI] Request started: model=${modelName}, promptLength=${prompt.length}`);
 
