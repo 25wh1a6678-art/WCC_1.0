@@ -15,9 +15,10 @@ import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
 import { TaskCard } from '@/components/tasks/TaskCard';
 import { TaskFormModal } from '@/components/tasks/TaskFormModal';
+import { TaskPlannerModal } from '@/components/ai/TaskPlannerModal';
 import { TaskFilter } from '@/components/tasks/TaskFilter';
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
-import { Plus, CheckSquare, AlertCircle } from 'lucide-react';
+import { Plus, CheckSquare, AlertCircle, Sparkles } from 'lucide-react';
 
 export default function TasksPage() {
   const { user, isLoading: authLoading } = useAuth();
@@ -30,6 +31,7 @@ export default function TasksPage() {
 
   // Modal states
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isAiModalOpen, setIsAiModalOpen] = useState(false);
   const [taskToEdit, setTaskToEdit] = useState<Task | null>(null);
 
   // Filter state
@@ -193,14 +195,25 @@ export default function TasksPage() {
           </p>
         </div>
 
-        <Button
-          onClick={handleOpenCreateModal}
-          variant="primary"
-          className="gap-2 shadow-sm"
-        >
-          <Plus className="w-4 h-4" />
-          Add Task
-        </Button>
+        <div className="flex items-center gap-2">
+          <Button
+            onClick={() => setIsAiModalOpen(true)}
+            variant="outline"
+            className="gap-2 border-indigo-200 dark:border-indigo-800 text-indigo-700 dark:text-indigo-300 hover:bg-indigo-50 dark:hover:bg-indigo-950/40"
+          >
+            <Sparkles className="w-4 h-4 text-indigo-600 dark:text-indigo-400" />
+            AI Plan Tasks
+          </Button>
+
+          <Button
+            onClick={handleOpenCreateModal}
+            variant="primary"
+            className="gap-2 shadow-sm"
+          >
+            <Plus className="w-4 h-4" />
+            Add Task
+          </Button>
+        </div>
       </div>
 
       {/* Filter and Search Bar */}
@@ -271,6 +284,17 @@ export default function TasksPage() {
         onClose={() => setIsModalOpen(false)}
         onSubmit={handleModalSubmit}
         taskToEdit={taskToEdit}
+      />
+
+      {/* AI Task Planner Modal */}
+      <TaskPlannerModal
+        isOpen={isAiModalOpen}
+        onClose={() => setIsAiModalOpen(false)}
+        onTasksAccepted={(newTasks) => {
+          setTasks((prev) => [...newTasks, ...prev]);
+          setAllTasksCount((prev) => [...newTasks, ...prev]);
+        }}
+        onOpenManualCreate={handleOpenCreateModal}
       />
     </div>
   );

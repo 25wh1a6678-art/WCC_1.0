@@ -11,6 +11,7 @@ import { Button } from '@/components/ui/Button';
 import { Badge } from '@/components/ui/Badge';
 import { TaskCard } from '@/components/tasks/TaskCard';
 import { TaskFormModal } from '@/components/tasks/TaskFormModal';
+import { TaskPlannerModal } from '@/components/ai/TaskPlannerModal';
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
 import { formatMinutes, getGreeting } from '@/lib/utils';
 import {
@@ -32,6 +33,7 @@ export default function DashboardPage() {
   const [tasksLoading, setTasksLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
+  const [isAiModalOpen, setIsAiModalOpen] = useState(false);
   const [, startTransition] = useTransition();
 
   // Redirect if unauthenticated
@@ -138,6 +140,15 @@ export default function DashboardPage() {
         </div>
 
         <div className="flex items-center gap-2">
+          <Button
+            onClick={() => setIsAiModalOpen(true)}
+            variant="outline"
+            className="gap-2 border-indigo-200 dark:border-indigo-800 text-indigo-700 dark:text-indigo-300 hover:bg-indigo-50 dark:hover:bg-indigo-950/40"
+          >
+            <Sparkles className="w-4 h-4 text-indigo-600 dark:text-indigo-400" />
+            AI Task Planner
+          </Button>
+
           <Button
             onClick={() => setIsCreateModalOpen(true)}
             variant="primary"
@@ -328,6 +339,16 @@ export default function DashboardPage() {
         isOpen={isCreateModalOpen}
         onClose={() => setIsCreateModalOpen(false)}
         onSubmit={handleCreateTask}
+      />
+
+      {/* AI Task Planner Modal */}
+      <TaskPlannerModal
+        isOpen={isAiModalOpen}
+        onClose={() => setIsAiModalOpen(false)}
+        onTasksAccepted={(newTasks) => {
+          setTasks((prev) => [...newTasks, ...prev]);
+        }}
+        onOpenManualCreate={() => setIsCreateModalOpen(true)}
       />
     </div>
   );
