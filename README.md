@@ -106,6 +106,16 @@ NEXT_PUBLIC_APP_URL=http://localhost:3000
 
 > **Note**: If Supabase credentials are not yet configured, the app runs seamlessly in **Local Demo Mode** using browser-isolated storage, allowing instant local testing of all Auth and Task features without crashing.
 
+### Google OAuth and signup email delivery
+
+The signup and login pages include **Continue with Google** when Supabase is configured. To enable it:
+
+1. In Supabase, open **Authentication → Providers → Google** and enable the provider with the Google OAuth client ID and secret.
+2. In Google Cloud Console, add the Supabase callback URI shown in the Google provider settings (usually `https://<project-ref>.supabase.co/auth/v1/callback`) as an authorized redirect URI.
+3. In Supabase **Authentication → URL Configuration**, add the app callback (for example `http://localhost:3000/api/auth/callback`) to the allowed redirect URLs, plus your deployed app callback URL.
+
+Google OAuth avoids confirmation emails from Supabase for Google signups. Password-based signup still sends confirmation mail when email confirmation is enabled; the Supabase built-in mailer has strict sending limits. Configure a custom SMTP provider in Supabase **Authentication → SMTP Settings** for multiple password-based signups. The app now tells users when confirmation is required and gives a specific message when the mailer rate limit is reached; changing frontend code cannot increase the provider quota.
+
 ### 3. Apply Supabase Database Schema
 
 1. Go to your [Supabase Dashboard](https://app.supabase.com).

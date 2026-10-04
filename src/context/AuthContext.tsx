@@ -14,8 +14,13 @@ interface AuthContextType {
   user: AuthUser | null;
   isLoading: boolean;
   isConfigured: boolean;
-  signUp: (email: string, password: string, name?: string) => Promise<{ error: string | null }>;
+  signUp: (
+    email: string,
+    password: string,
+    name?: string
+  ) => Promise<{ error: string | null; needsEmailConfirmation?: boolean }>;
   signIn: (email: string, password: string) => Promise<{ error: string | null }>;
+  signInWithGoogle: (next?: string) => Promise<{ error: string | null }>;
   signOut: () => Promise<void>;
 }
 
@@ -89,7 +94,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     email: string,
     password: string,
     name?: string
-  ): Promise<{ error: string | null }> => {
+  ): Promise<{ error: string | null; needsEmailConfirmation?: boolean }> => {
     setIsLoading(true);
     try {
       if (isConfigured) {
@@ -110,11 +115,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           return { error: error.message };
         }
 
-        if (data.user) {
+        if (data.user && data.session) {
           mapAndSetUser(data.user);
         }
         setIsLoading(false);
-        return { error: null };
+        return {
+          error: null,
+          needsEmailConfirmation: Boolean(data.user && !data.session),
+        };
       } else {
         // Local mode fallback
         const existingRaw = localStorage.getItem(LOCAL_STORAGE_USERS_DB_KEY);
@@ -147,6 +155,34 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setIsLoading(false);
       const message = err instanceof Error ? err.message : 'Sign up failed';
       return { error: message };
+    }
+  };
+
+  const signInWithGoogle = async (next = '/dashboard'): Promise<{ error: string | null }> => {
+    if (!isConfigured) {
+      return { error: 'Google sign-in requires Supabase and Google OAuth configuration.' };
+    }
+
+    setIsLoading(true);
+    try {
+      const supabase = createClient();
+      const safeNext = next.startsWith('/') && !next.startsWith('//') ? next : '/dashboard';
+      const callbackUrl = new URL('/api/auth/callback', window.location.origin);
+      callbackUrl.searchParams.set('next', safeNext);
+      const { error } = await supabase.auth.signInWithOAuth({
+        provider: 'google',
+        options: { redirectTo: callbackUrl.toString() },
+      });
+      if (error) {
+        setIsLoading(false);
+        return { error: error.message };
+      }
+      return { error: null };
+    } catch (err: unknown) {
+      setIsLoading(false);
+      return {
+        error: err instanceof Error ? err.message : 'Google sign-in could not be started.',
+      };
     }
   };
 
@@ -226,6 +262,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         isConfigured,
         signUp,
         signIn,
+        signInWithGoogle,
         signOut,
       }}
     >

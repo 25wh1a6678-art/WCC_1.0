@@ -7,7 +7,7 @@ import { useAuth } from '@/context/AuthContext';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { Card } from '@/components/ui/Card';
-import { ShieldCheck, LogIn, ArrowRight } from 'lucide-react';
+import { ShieldCheck, LogIn, ArrowRight, MailCheck } from 'lucide-react';
 
 function LoginForm() {
   const [email, setEmail] = useState('');
@@ -15,7 +15,7 @@ function LoginForm() {
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
 
-  const { signIn } = useAuth();
+  const { signIn, signInWithGoogle, isConfigured } = useAuth();
   const router = useRouter();
   const searchParams = useSearchParams();
   const redirect = searchParams.get('redirect') || '/dashboard';
@@ -42,6 +42,19 @@ function LoginForm() {
     }
   };
 
+  const handleGoogleSignIn = async () => {
+    setError(null);
+    setIsLoading(true);
+    try {
+      const result = await signInWithGoogle(redirect);
+      if (result.error) setError(result.error);
+    } catch {
+      setError('Google sign-in could not be started. Please try again.');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   return (
     <div className="flex-1 flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
       <div className="w-full max-w-md space-y-6">
@@ -60,8 +73,23 @@ function LoginForm() {
         <Card className="p-6 sm:p-8">
           <form onSubmit={handleSubmit} className="space-y-4">
             {error && (
-              <div className="p-3 text-xs rounded-lg bg-rose-50 dark:bg-rose-950/40 text-rose-600 dark:text-rose-300 border border-rose-200 dark:border-rose-900">
-                {error}
+              <div role="alert" className="p-3 text-xs rounded-lg bg-rose-50 dark:bg-rose-950/40 text-rose-600 dark:text-rose-300 border border-rose-200 dark:border-rose-900">
+                {error.toLowerCase().includes('rate limit') || error.toLowerCase().includes('email rate')
+                  ? 'Supabase has temporarily reached its email sending limit. Password login does not require another email, but account confirmation/reset emails may be delayed. Configure custom SMTP in Supabase Auth settings.'
+                  : error}
+              </div>
+            )}
+
+            {searchParams.get('error') === 'auth-callback-failed' && (
+              <div role="alert" className="p-3 text-xs rounded-lg bg-rose-50 dark:bg-rose-950/40 text-rose-600 dark:text-rose-300 border border-rose-200 dark:border-rose-900">
+                Google sign-in did not complete. Confirm Google OAuth and the callback URL are configured in Supabase.
+              </div>
+            )}
+
+            {searchParams.get('message') === 'check-email' && (
+              <div role="status" className="p-3 text-xs rounded-lg bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-900 flex items-start gap-2">
+                <MailCheck className="w-4 h-4 shrink-0" />
+                <span>Check your inbox for a confirmation link before logging in. If no email arrives, the Supabase sender may be rate-limited.</span>
               </div>
             )}
 
@@ -94,6 +122,26 @@ function LoginForm() {
               <LogIn className="w-4 h-4" />
               Log In
             </Button>
+
+            {isConfigured && (
+              <>
+                <div className="flex items-center gap-3 py-1">
+                  <div className="h-px flex-1 bg-slate-200 dark:bg-slate-700" />
+                  <span className="text-[10px] uppercase tracking-wider text-slate-400">or continue with</span>
+                  <div className="h-px flex-1 bg-slate-200 dark:bg-slate-700" />
+                </div>
+                <Button
+                  type="button"
+                  variant="outline"
+                  className="w-full gap-2"
+                  isLoading={isLoading}
+                  onClick={handleGoogleSignIn}
+                >
+                  <span aria-hidden="true" className="font-bold text-base">G</span>
+                  Continue with Google
+                </Button>
+              </>
+            )}
           </form>
 
           <div className="mt-6 pt-5 border-t border-slate-100 dark:border-slate-800 text-center">
