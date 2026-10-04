@@ -425,6 +425,8 @@ Suggested daily cap: **200 coins**.
 
 These values are configuration, not hard-coded business assumptions, and may be tuned after testing.
 
+For the MVP, daily boundaries use UTC. A task's completion reward is claimable only once per user, including tasks completed below the five-minute reward threshold or while the daily cap is reached. Completing a qualifying focus contract adds a +25 first-success-of-the-day bonus; 3-, 7-, 14-, and 30-day streak milestones add +20, +30, +40, and +50 respectively, all subject to the daily cap. A purchased recovery pass automatically bridges exactly one missed day and is consumed when used; a longer gap resets the streak.
+
 ## FR-20: Reward Shop
 
 The system shall show a virtual reward catalog.

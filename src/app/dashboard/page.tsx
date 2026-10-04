@@ -12,18 +12,35 @@ import { Badge } from '@/components/ui/Badge';
 import { TaskCard } from '@/components/tasks/TaskCard';
 import { TaskFormModal } from '@/components/tasks/TaskFormModal';
 import { TaskPlannerModal } from '@/components/ai/TaskPlannerModal';
+import { CommitmentModal } from '@/components/focus/CommitmentModal';
+import { getActiveCommitment, getCommitmentStats } from '@/lib/commitments';
+import { Commitment, CommitmentStats } from '@/types/commitment';
+import { getRewardOverview } from '@/lib/rewards';
+import { RewardOverview } from '@/types/rewards';
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
 import { formatMinutes, getGreeting } from '@/lib/utils';
 import {
   CheckSquare,
   Plus,
   Flame,
-  Coins,
   ArrowRight,
   TrendingUp,
   AlertCircle,
   Sparkles,
+  Timer,
+  Clock,
+  Coins,
 } from 'lucide-react';
+
+const EMPTY_REWARDS: RewardOverview = {
+  balance: 0,
+  currentStreak: 0,
+  longestStreak: 0,
+  lastSuccessDate: null,
+  recoveryPasses: 0,
+  transactions: [],
+  inventory: [],
+};
 
 export default function DashboardPage() {
   const { user, isLoading: authLoading } = useAuth();
@@ -34,6 +51,10 @@ export default function DashboardPage() {
   const [error, setError] = useState<string | null>(null);
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [isAiModalOpen, setIsAiModalOpen] = useState(false);
+  const [taskForCommitment, setTaskForCommitment] = useState<Task | null>(null);
+  const [activeCommitment, setActiveCommitment] = useState<Commitment | null>(null);
+  const [commitmentStats, setCommitmentStats] = useState<CommitmentStats | null>(null);
+  const [rewards, setRewards] = useState<RewardOverview>(EMPTY_REWARDS);
   const [, startTransition] = useTransition();
 
   // Redirect if unauthenticated
@@ -43,24 +64,34 @@ export default function DashboardPage() {
     }
   }, [user, authLoading, router]);
 
-  // Load tasks
+  // Load dashboard data
   useEffect(() => {
     let ignore = false;
     if (!user) return;
 
-    const fetchTasks = async () => {
+    const fetchDashboardData = async () => {
       try {
-        const res = await getTasks(user.id);
+        const [tasksRes, activeRes, statsRes, rewardsRes] = await Promise.all([
+          getTasks(user.id),
+          getActiveCommitment(user.id),
+          getCommitmentStats(user.id),
+          getRewardOverview(user.id),
+        ]);
+
         if (!ignore) {
-          if (res.error) {
-            setError(res.error);
+          if (tasksRes.error) {
+            setError(tasksRes.error);
           } else {
-            setTasks(res.data);
+            setTasks(tasksRes.data);
           }
+          setActiveCommitment(activeRes.data);
+          setCommitmentStats(statsRes);
+          if (rewardsRes.error) setError(rewardsRes.error);
+          else setRewards(rewardsRes.data);
         }
       } catch {
         if (!ignore) {
-          setError('An unexpected error occurred while loading tasks.');
+          setError('An unexpected error occurred while loading dashboard data.');
         }
       } finally {
         if (!ignore) {
@@ -69,7 +100,7 @@ export default function DashboardPage() {
       }
     };
 
-    fetchTasks();
+    fetchDashboardData();
 
     return () => {
       ignore = true;
@@ -160,8 +191,42 @@ export default function DashboardPage() {
         </div>
       </div>
 
+      {/* Active Focus Session Banner */}
+      {activeCommitment && activeCommitment.task && (
+        <div className="p-4 sm:p-5 rounded-2xl bg-gradient-to-r from-indigo-600 via-indigo-700 to-purple-700 text-white shadow-lg flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 animate-in fade-in duration-200">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-xl bg-white/10 flex items-center justify-center shrink-0">
+              <Timer className="w-5 h-5 text-white animate-spin" />
+            </div>
+            <div>
+              <div className="flex items-center gap-2">
+                <span className="text-[10px] font-bold uppercase tracking-wider bg-white/20 px-2 py-0.5 rounded-full">
+                  Focus Session Active
+                </span>
+                <span className="text-xs text-indigo-200">
+                  {activeCommitment.duration_minutes} min contract
+                </span>
+              </div>
+              <h4 className="text-sm sm:text-base font-bold text-white mt-0.5">
+                {activeCommitment.task.title}
+              </h4>
+            </div>
+          </div>
+          <Link href="/focus">
+            <Button
+              variant="outline"
+              size="sm"
+              className="bg-white text-indigo-700 hover:bg-indigo-50 border-0 font-bold shrink-0"
+            >
+              Return to Focus Timer
+              <ArrowRight className="w-4 h-4 ml-1.5" />
+            </Button>
+          </Link>
+        </div>
+      )}
+
       {/* Progress & Stat Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4">
         {/* Total Tasks */}
         <Card className="p-5 flex items-center justify-between">
           <div>
@@ -197,24 +262,22 @@ export default function DashboardPage() {
           </div>
         </Card>
 
-        {/* Focus Coins (V5 Milestone) */}
-        <Card className="p-5 flex items-center justify-between relative overflow-hidden">
+        {/* Focus Commitments & Deep Work (V3) */}
+        <Card className="p-5 flex items-center justify-between">
           <div>
             <div className="flex items-center gap-1.5">
-              <p className="text-xs font-medium text-slate-500 dark:text-slate-400">FocusCoins</p>
-              <span className="text-[9px] px-1 py-0.2 rounded bg-amber-100 dark:bg-amber-950 text-amber-700 dark:text-amber-300 font-mono">
-                V5
-              </span>
+              <p className="text-xs font-medium text-slate-500 dark:text-slate-400">Focus Deep Work</p>
+              <Badge variant="neutral" className="text-[9px] px-1 py-0.2 text-indigo-600 dark:text-indigo-400 font-mono">V3</Badge>
             </div>
             <h3 className="text-2xl font-bold text-slate-900 dark:text-white mt-1">
-              0 <span className="text-xs font-normal text-slate-400">coins</span>
+              {commitmentStats?.totalFocusedMinutes || 0} <span className="text-xs font-normal text-slate-400">mins</span>
             </h3>
-            <p className="text-[11px] text-amber-600 dark:text-amber-400 mt-0.5">
-              Earn on task completion in V5
+            <p className="text-[11px] text-indigo-600 dark:text-indigo-400 mt-0.5">
+              {commitmentStats?.completedCommitments || 0} contracts fulfilled
             </p>
           </div>
-          <div className="w-11 h-11 rounded-xl bg-amber-50 dark:bg-amber-950 flex items-center justify-center text-amber-600 dark:text-amber-400">
-            <Coins className="w-5 h-5" />
+          <div className="w-11 h-11 rounded-xl bg-indigo-50 dark:bg-indigo-950 flex items-center justify-center text-indigo-600 dark:text-indigo-400">
+            <Clock className="w-5 h-5" />
           </div>
         </Card>
 
@@ -228,14 +291,35 @@ export default function DashboardPage() {
               </span>
             </div>
             <h3 className="text-2xl font-bold text-slate-900 dark:text-white mt-1">
-              0 <span className="text-xs font-normal text-slate-400">days</span>
+              {rewards.currentStreak}{' '}
+              <span className="text-xs font-normal text-slate-400">day</span>
             </h3>
             <p className="text-[11px] text-orange-600 dark:text-orange-400 mt-0.5">
-              Streak active in V5
+              {rewards.lastSuccessDate === new Date().toISOString().slice(0, 10)
+                ? `${rewards.longestStreak}-day best streak`
+                : 'Complete a focus contract'}
             </p>
           </div>
           <div className="w-11 h-11 rounded-xl bg-orange-50 dark:bg-orange-950 flex items-center justify-center text-orange-600 dark:text-orange-400">
             <Flame className="w-5 h-5" />
+          </div>
+        </Card>
+
+        <Card className="p-5 flex items-center justify-between">
+          <div>
+            <div className="flex items-center gap-1.5">
+              <p className="text-xs font-medium text-slate-500 dark:text-slate-400">FocusCoins</p>
+              <Badge variant="neutral" className="text-[9px] px-1 py-0.2 text-amber-700 dark:text-amber-300 font-mono">V5</Badge>
+            </div>
+            <h3 className="text-2xl font-bold text-slate-900 dark:text-white mt-1">
+              {rewards.balance} <span className="text-xs font-normal text-slate-400">FC</span>
+            </h3>
+            <Link href="/rewards" className="text-[11px] text-amber-700 dark:text-amber-300 mt-0.5 inline-block hover:underline">
+              Browse virtual rewards
+            </Link>
+          </div>
+          <div className="w-11 h-11 rounded-xl bg-amber-50 dark:bg-amber-950 flex items-center justify-center text-amber-600 dark:text-amber-400">
+            <Coins className="w-5 h-5" />
           </div>
         </Card>
       </div>
@@ -247,23 +331,30 @@ export default function DashboardPage() {
             <div className="flex items-center gap-2">
               <Sparkles className="w-4 h-4 text-indigo-600 dark:text-indigo-400" />
               <h3 className="text-base font-semibold text-slate-900 dark:text-white">
-                Focus Contract Workflow: Reflect → Plan → Commit → Focus
+                The Anti-Procrastination Loop: Reflect → Plan → Commit → Focus
               </h3>
             </div>
             <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-400 leading-relaxed">
-              In V0, manual tasks provide the deterministic backbone. In upcoming versions, you will be able to speak your daily reflection (V2), let Gemini AI extract your actionable plan (V1), and trigger browser blocking during commitments (V3-V4).
+              Convert your day&rsquo;s reflection into a concrete plan (V2), lock in focused contracts (V3), block distractions (V4), and earn FocusCoins for meaningful progress (V5).
             </p>
           </div>
 
           <div className="flex flex-wrap items-center gap-3 shrink-0">
             <Link href="/reflection">
               <Button variant="outline" size="sm" className="gap-1.5">
-                Preview Reflection (V2)
+                Daily Reflection (V2)
               </Button>
             </Link>
             <Link href="/focus">
+              <Button variant="primary" size="sm" className="gap-1.5">
+                <Timer className="w-4 h-4" />
+                Focus Mode (V3)
+              </Button>
+            </Link>
+            <Link href="/rewards">
               <Button variant="outline" size="sm" className="gap-1.5">
-                Preview Focus Mode (V3)
+                <Coins className="w-4 h-4" />
+                Rewards (V5)
               </Button>
             </Link>
           </div>
@@ -328,6 +419,7 @@ export default function DashboardPage() {
                 onDelete={async (id) => {
                   setTasks((prev) => prev.filter((t) => t.id !== id));
                 }}
+                onCommit={(task) => setTaskForCommitment(task)}
               />
             ))}
           </div>
@@ -350,6 +442,16 @@ export default function DashboardPage() {
         }}
         onOpenManualCreate={() => setIsCreateModalOpen(true)}
       />
+
+      {/* Commitment Modal */}
+      {taskForCommitment && user && (
+        <CommitmentModal
+          isOpen={!!taskForCommitment}
+          onClose={() => setTaskForCommitment(null)}
+          task={taskForCommitment}
+          userId={user.id}
+        />
+      )}
     </div>
   );
 }

@@ -14,6 +14,7 @@ import {
   Pencil,
   Trash2,
   AlertCircle,
+  Timer,
 } from 'lucide-react';
 
 interface TaskCardProps {
@@ -21,9 +22,16 @@ interface TaskCardProps {
   onToggleComplete: (task: Task) => Promise<void>;
   onEdit: (task: Task) => void;
   onDelete: (taskId: string) => Promise<void>;
+  onCommit?: (task: Task) => void;
 }
 
-export function TaskCard({ task, onToggleComplete, onEdit, onDelete }: TaskCardProps) {
+export function TaskCard({
+  task,
+  onToggleComplete,
+  onEdit,
+  onDelete,
+  onCommit,
+}: TaskCardProps) {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
   const [isToggling, setIsToggling] = useState(false);
@@ -133,47 +141,72 @@ export function TaskCard({ task, onToggleComplete, onEdit, onDelete }: TaskCardP
           </div>
         </div>
 
-        {/* Menu / Actions */}
-        <div className="relative shrink-0">
-          <button
-            onClick={() => setIsMenuOpen(!isMenuOpen)}
-            className="p-1 rounded-md text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer"
-            aria-label="Actions"
-          >
-            <MoreVertical className="w-4 h-4" />
-          </button>
-
-          {isMenuOpen && (
-            <>
-              <div
-                className="fixed inset-0 z-20"
-                onClick={() => setIsMenuOpen(false)}
-              />
-              <div className="absolute right-0 top-7 z-30 w-36 bg-white dark:bg-slate-800 rounded-lg shadow-lg border border-slate-200 dark:border-slate-700 py-1 text-xs">
-                <button
-                  onClick={() => {
-                    setIsMenuOpen(false);
-                    onEdit(task);
-                  }}
-                  className="w-full px-3 py-1.5 text-left text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-700 flex items-center gap-2 cursor-pointer"
-                >
-                  <Pencil className="w-3.5 h-3.5" />
-                  Edit Task
-                </button>
-                <button
-                  onClick={() => {
-                    setIsMenuOpen(false);
-                    handleDelete();
-                  }}
-                  disabled={isDeleting}
-                  className="w-full px-3 py-1.5 text-left text-rose-600 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/40 flex items-center gap-2 cursor-pointer"
-                >
-                  <Trash2 className="w-3.5 h-3.5" />
-                  Delete
-                </button>
-              </div>
-            </>
+        {/* Actions */}
+        <div className="flex items-center gap-1 shrink-0">
+          {!isCompleted && onCommit && (
+            <button
+              onClick={() => onCommit(task)}
+              className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-semibold bg-indigo-50 hover:bg-indigo-100 text-indigo-700 dark:bg-indigo-950/70 dark:hover:bg-indigo-900 dark:text-indigo-300 transition-colors cursor-pointer border border-indigo-200/60 dark:border-indigo-800 shadow-xs"
+              title="Start Focus Commitment Contract"
+            >
+              <Timer className="w-3.5 h-3.5" />
+              Focus
+            </button>
           )}
+
+          <div className="relative">
+            <button
+              onClick={() => setIsMenuOpen(!isMenuOpen)}
+              className="p-1 rounded-md text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer"
+              aria-label="Actions"
+            >
+              <MoreVertical className="w-4 h-4" />
+            </button>
+
+            {isMenuOpen && (
+              <>
+                <div
+                  className="fixed inset-0 z-20"
+                  onClick={() => setIsMenuOpen(false)}
+                />
+                <div className="absolute right-0 top-7 z-30 w-40 bg-white dark:bg-slate-800 rounded-lg shadow-lg border border-slate-200 dark:border-slate-700 py-1 text-xs">
+                  {!isCompleted && onCommit && (
+                    <button
+                      onClick={() => {
+                        setIsMenuOpen(false);
+                        onCommit(task);
+                      }}
+                      className="w-full px-3 py-1.5 text-left text-indigo-600 dark:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-950/40 flex items-center gap-2 cursor-pointer font-medium"
+                    >
+                      <Timer className="w-3.5 h-3.5" />
+                      Start Focus
+                    </button>
+                  )}
+                  <button
+                    onClick={() => {
+                      setIsMenuOpen(false);
+                      onEdit(task);
+                    }}
+                    className="w-full px-3 py-1.5 text-left text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-700 flex items-center gap-2 cursor-pointer"
+                  >
+                    <Pencil className="w-3.5 h-3.5" />
+                    Edit Task
+                  </button>
+                  <button
+                    onClick={() => {
+                      setIsMenuOpen(false);
+                      handleDelete();
+                    }}
+                    disabled={isDeleting}
+                    className="w-full px-3 py-1.5 text-left text-rose-600 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/40 flex items-center gap-2 cursor-pointer"
+                  >
+                    <Trash2 className="w-3.5 h-3.5" />
+                    Delete
+                  </button>
+                </div>
+              </>
+            )}
+          </div>
         </div>
       </div>
     </Card>

@@ -33,7 +33,17 @@ WCC_1.0/
 ├── supabase/
 │   └── schema.sql                   # PostgreSQL schema (users, tasks, RLS, triggers)
 ├── tests/
-│   └── v0-verification.ts           # Automated test suite (38 tests)
+│   ├── v0-verification.ts           # Automated verification suite
+│   ├── v1-ai-planning.test.ts       # AI planning validation suite
+│   ├── v2-reflection.test.ts        # Voice & reflection validation suite
+│   ├── v3-commitment.test.ts        # Focus commitment validation suite
+│   ├── v4-distraction.test.ts       # Distraction guard validation suite
+│   └── v5-rewards.test.ts           # FocusCoin, streak, and shop validation suite
+├── extension/
+│   ├── manifest.json                # Chrome extension manifest for the blocker demo
+│   ├── background.js                # Domain blocking logic
+│   ├── popup.html                   # Guard controls for demo configuration
+│   └── blocked.html                 # Redirect screen shown when a blocked domain is visited
 └── src/
     ├── app/
     │   ├── layout.tsx               # Root layout with AuthProvider & navigation
@@ -42,9 +52,9 @@ WCC_1.0/
     │   ├── signup/page.tsx          # Account registration (/signup)
     │   ├── dashboard/page.tsx       # Student dashboard with metrics (/dashboard)
     │   ├── tasks/page.tsx           # Task CRUD & filter management (/tasks)
-    │   ├── focus/page.tsx           # V3 Focus Mode placeholder (/focus)
-    │   ├── reflection/page.tsx      # V2 Daily Reflection placeholder (/reflection)
-    │   ├── rewards/page.tsx         # V5 Reward System placeholder (/rewards)
+    │   ├── focus/page.tsx           # V3 Focus Mode (/focus)
+    │   ├── reflection/page.tsx      # V2 Daily Reflection (/reflection)
+    │   ├── rewards/page.tsx         # V5 FocusCoin shop and reward history (/rewards)
     │   ├── api/auth/callback/       # Supabase OAuth callback route
     │   └── globals.css              # Tailwind styles & theme variables
     ├── components/
@@ -60,6 +70,7 @@ WCC_1.0/
     │   │   ├── server.ts            # Supabase server client (async cookies)
     │   │   └── middleware.ts        # Supabase middleware session refresh
     │   ├── tasks.ts                 # Task CRUD operations & validation service
+    │   ├── rewards.ts               # FocusCoin, streak, inventory, and purchase service
     │   └── utils.ts                 # Date and duration formatters
     ├── types/
     │   ├── database.types.ts        # Supabase schema TypeScript definitions
@@ -106,6 +117,7 @@ This creates:
 - `public.tasks` table (with check constraints, foreign keys, timestamps, indexes)
 - Strict **Row-Level Security (RLS)** ensuring users only access their own data
 - Triggers for automatic `updated_at` and `completed_at` timestamps
+- V2 reflections, V3 commitments, and V5 FocusCoin/streak/shop tables and atomic reward RPC functions
 
 ### 4. Run Development Server
 
@@ -122,6 +134,10 @@ npm test
 npm run lint
 npm run build
 ```
+
+V5 adds FocusCoin wallets, streaks, a reward transaction ledger, and purchased-item inventory. Apply the updated `supabase/schema.sql` in the Supabase SQL Editor to create these tables and the atomic completion/purchase functions. Local Demo Mode stores reward data in browser storage.
+
+FocusCoins are virtual and have no cash value. Completed focus contracts under five minutes do not earn coins; eligible completion awards use duration tiers, a daily 200-coin cap, a first-daily-completion bonus, and streak milestone bonuses. A purchased recovery pass automatically protects one missed streak day.
 
 ---
 

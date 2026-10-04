@@ -16,6 +16,7 @@ import { Card } from '@/components/ui/Card';
 import { TaskCard } from '@/components/tasks/TaskCard';
 import { TaskFormModal } from '@/components/tasks/TaskFormModal';
 import { TaskPlannerModal } from '@/components/ai/TaskPlannerModal';
+import { CommitmentModal } from '@/components/focus/CommitmentModal';
 import { TaskFilter } from '@/components/tasks/TaskFilter';
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
 import { Plus, CheckSquare, AlertCircle, Sparkles } from 'lucide-react';
@@ -33,6 +34,7 @@ export default function TasksPage() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isAiModalOpen, setIsAiModalOpen] = useState(false);
   const [taskToEdit, setTaskToEdit] = useState<Task | null>(null);
+  const [taskForCommitment, setTaskForCommitment] = useState<Task | null>(null);
 
   // Filter state
   const [filter, setFilter] = useState<TaskFilterOptions>({
@@ -273,6 +275,7 @@ export default function TasksPage() {
               onToggleComplete={handleToggleComplete}
               onEdit={handleOpenEditModal}
               onDelete={handleDeleteTask}
+              onCommit={(task) => setTaskForCommitment(task)}
             />
           ))}
         </div>
@@ -296,6 +299,16 @@ export default function TasksPage() {
         }}
         onOpenManualCreate={handleOpenCreateModal}
       />
+
+      {/* Commitment Modal */}
+      {taskForCommitment && user && (
+        <CommitmentModal
+          isOpen={!!taskForCommitment}
+          onClose={() => setTaskForCommitment(null)}
+          task={taskForCommitment}
+          userId={user.id}
+        />
+      )}
     </div>
   );
 }

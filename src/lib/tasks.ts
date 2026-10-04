@@ -2,23 +2,79 @@ import { createClient, isSupabaseConfigured } from './supabase/client';
 import { Task, TaskFilterOptions, TaskFormData, TaskInsert, TaskStatus, TaskUpdate } from '@/types/task';
 
 const LOCAL_TASKS_PREFIX = 'fc_tasks_user_';
+const memoryTasks = new Map<string, Task[]>();
 
 function getLocalTasks(userId: string): Task[] {
+  if (typeof window === 'undefined') {
+    return memoryTasks.get(userId) || [];
+  }
   try {
     const raw = localStorage.getItem(`${LOCAL_TASKS_PREFIX}${userId}`);
     return raw ? JSON.parse(raw) : [];
-  } catch (e) {
-    console.error('Failed to read local tasks', e);
-    return [];
+  } catch {
+    return memoryTasks.get(userId) || [];
   }
 }
 
 function saveLocalTasks(userId: string, tasks: Task[]): void {
+  if (typeof window === 'undefined') {
+    memoryTasks.set(userId, tasks);
+    return;
+  }
   try {
     localStorage.setItem(`${LOCAL_TASKS_PREFIX}${userId}`, JSON.stringify(tasks));
-  } catch (e) {
-    console.error('Failed to save local tasks', e);
+  } catch {
+    memoryTasks.set(userId, tasks);
   }
+}
+
+/**
+ * Fetch a single task by ID
+ */
+export async function getTaskById(
+  taskId: string
+): Promise<{ data: Task | null; error: string | null }> {
+  if (!taskId) return { data: null, error: 'Task ID is required' };
+
+  if (isSupabaseConfigured()) {
+    try {
+      const supabase = createClient();
+      const { data, error } = await supabase
+        .from('tasks')
+        .select('*')
+        .eq('id', taskId)
+        .maybeSingle();
+
+      if (!error && data) {
+        return { data: data as Task, error: null };
+      }
+    } catch {
+      // Fallback
+    }
+  }
+
+  // Local fallback: search across memory / local storage
+  if (typeof window === 'undefined') {
+    for (const tasksList of memoryTasks.values()) {
+      const found = tasksList.find((t) => t.id === taskId);
+      if (found) return { data: found, error: null };
+    }
+  } else {
+    try {
+      for (let i = 0; i < localStorage.length; i++) {
+        const key = localStorage.key(i);
+        if (key?.startsWith(LOCAL_TASKS_PREFIX)) {
+          const list: Task[] = JSON.parse(localStorage.getItem(key) || '[]');
+          const found = list.find((t) => t.id === taskId);
+          if (found) return { data: found, error: null };
+        }
+      }
+    } catch {
+      // ignore
+    }
+  }
+
+  return { data: null, error: 'Task not found' };
 }
 
 /**

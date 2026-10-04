@@ -17,11 +17,11 @@ export interface TaskFilterOptions {
 
 export interface TaskFormData {
   title: string;
-  description: string;
-  priority: TaskPriority;
+  description?: string;
+  priority?: TaskPriority;
   estimated_minutes: number;
-  deadline: string;
-  status: TaskStatus;
+  deadline?: string | null;
+  status?: TaskStatus;
 }
 
 export const PRIORITY_CONFIG: Record<

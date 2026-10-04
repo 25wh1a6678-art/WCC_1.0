@@ -7,9 +7,12 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
-    "test": "npx tsx tests/v0-verification.ts && npx tsx tests/v1-ai-planning.test.ts && npx tsx tests/v2-reflection.test.ts",
+    "test": "npx tsx tests/v0-verification.ts && npx tsx tests/v1-ai-planning.test.ts && npx tsx tests/v2-reflection.test.ts && npx tsx tests/v3-commitment.test.ts && npx tsx tests/v4-distraction.test.ts && npx tsx tests/v5-rewards.test.ts",
     "test:v1": "npx tsx tests/v1-ai-planning.test.ts",
-    "test:v2": "npx tsx tests/v2-reflection.test.ts"
+    "test:v2": "npx tsx tests/v2-reflection.test.ts",
+    "test:v3": "npx tsx tests/v3-commitment.test.ts",
+    "test:v4": "npx tsx tests/v4-distraction.test.ts",
+    "test:v5": "npx tsx tests/v5-rewards.test.ts"
   },
   "dependencies": {
     "@google/genai": "^2.27.0",
