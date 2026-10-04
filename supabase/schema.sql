@@ -131,3 +131,47 @@ drop policy if exists "Users can delete their own tasks" on public.tasks;
 create policy "Users can delete their own tasks"
     on public.tasks for delete
     using (auth.uid() = user_id);
+
+-- 8. DAILY_REFLECTIONS TABLE (V2)
+create table if not exists public.daily_reflections (
+    id uuid primary key default gen_random_uuid(),
+    user_id uuid not null references public.users(id) on delete cascade,
+    reflection_text text not null check (char_length(trim(reflection_text)) > 0),
+    created_at timestamptz not null default now(),
+    updated_at timestamptz not null default now()
+);
+
+comment on table public.daily_reflections is 'Student daily reflections transcribed from voice or typed text';
+
+create index if not exists idx_daily_reflections_user_id on public.daily_reflections(user_id);
+create index if not exists idx_daily_reflections_created_at on public.daily_reflections(created_at desc);
+
+drop trigger if exists set_daily_reflections_updated_at on public.daily_reflections;
+create trigger set_daily_reflections_updated_at
+    before update on public.daily_reflections
+    for each row
+    execute function public.handle_updated_at();
+
+-- DAILY REFLECTIONS RLS POLICIES
+alter table public.daily_reflections enable row level security;
+
+drop policy if exists "Users can view their own reflections" on public.daily_reflections;
+create policy "Users can view their own reflections"
+    on public.daily_reflections for select
+    using (auth.uid() = user_id);
+
+drop policy if exists "Users can create their own reflections" on public.daily_reflections;
+create policy "Users can create their own reflections"
+    on public.daily_reflections for insert
+    with check (auth.uid() = user_id);
+
+drop policy if exists "Users can update their own reflections" on public.daily_reflections;
+create policy "Users can update their own reflections"
+    on public.daily_reflections for update
+    using (auth.uid() = user_id)
+    with check (auth.uid() = user_id);
+
+drop policy if exists "Users can delete their own reflections" on public.daily_reflections;
+create policy "Users can delete their own reflections"
+    on public.daily_reflections for delete
+    using (auth.uid() = user_id);

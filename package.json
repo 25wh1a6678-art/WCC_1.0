@@ -7,8 +7,9 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
-    "test": "npx tsx tests/v0-verification.ts && npx tsx tests/v1-ai-planning.test.ts",
-    "test:v1": "npx tsx tests/v1-ai-planning.test.ts"
+    "test": "npx tsx tests/v0-verification.ts && npx tsx tests/v1-ai-planning.test.ts && npx tsx tests/v2-reflection.test.ts",
+    "test:v1": "npx tsx tests/v1-ai-planning.test.ts",
+    "test:v2": "npx tsx tests/v2-reflection.test.ts"
   },
   "dependencies": {
     "@google/genai": "^2.27.0",

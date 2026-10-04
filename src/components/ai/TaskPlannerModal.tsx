@@ -73,7 +73,10 @@ export function TaskPlannerModal({
     try {
       const res = await fetch('/api/ai/plan', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          ...(user ? { 'x-user-id': user.id } : {}),
+        },
         body: JSON.stringify({ input: trimmed }),
       });
 
